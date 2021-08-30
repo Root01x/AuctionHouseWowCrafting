@@ -36,13 +36,15 @@ fetch(`${API_URL}`)
 });
 */
 
-const ACCESS_TOKEN = 'USyfriJAWdPLKOXdB3p7Ij9MdP7aSPUh5O';
+const ACCESS_TOKEN = 'USKkEE1Vimnqscmml6TEScDVwS04WTT1CD';
 
 const API_AH =`https://us.api.blizzard.com/data/wow/connected-realm/86/auctions?namespace=dynamic-us&locale=en_US&access_token=${ACCESS_TOKEN}`;
 
-let codigo = 171285;
+const API_RECIPIES =`https://us.api.blizzard.com/data/wow/recipe/42298?namespace=static-us&locale=en_US&access_token=${ACCESS_TOKEN}`;
 
-async function buscaPokemon(codigo) {
+const codigo = 171285;
+
+async function buscaPokemon() {
   let url = API_AH
   let response = await fetch(url);
   if (!response.ok) {
@@ -53,8 +55,25 @@ async function buscaPokemon(codigo) {
 
   // Has tus converciones aqui
   let arregloRespuesta = myJson
+  
+  return arregloRespuesta.auctions;
+}
+//buscador de recetas para las ojetos dde alquimia
+async function finder_recipes() {
+  let url = API_RECIPIES;
+  let response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  let myJson = await response.json();
+
+  // Has tus converciones aqui
+  let arregloRespuesta = myJson
+  
   return arregloRespuesta;
 }
+
 
 function buscar(item) {
   let ItemPrices= {codigo:item.item.id, precio:item.unit_price};
@@ -62,18 +81,13 @@ function buscar(item) {
 }
 
 
-//let ar = [1,2,3,4,5]
+function finder_prices_ah(valor){
 
-
- 
-//console.log(ar.filter((x)=>x.id<=2));
-
-
-buscaPokemon(codigo)
-.then((arreglo) => arreglo.auctions)
+buscaPokemon()
+//.then((arreglo) => arreglo.auctions)
 .then((arreglo) => arreglo.map(buscar))
 //.then((arreglo) => arreglo.map(buscar2))
-.then((arreglo) => arreglo.filter((x)=>x.codigo==codigo))
+.then((arreglo) => arreglo.filter((x)=>x.codigo==valor))
 //.then((arreglo) => arreglo.codigo)
 .then((arreglo) => arreglo.map((x)=>x.precio))
 .then((arreglo) => Math.min(...arreglo)/10000)
@@ -81,13 +95,8 @@ buscaPokemon(codigo)
 //.then((arreglo) => arreglo.filter((x)=>x.precio<=Math.min(...x.precio)))
 .then((arreglo)=>console.log(arreglo))
 .catch(e => console.log(e));
-
-
-
-
-
-
-
+  
+}
 
 
 //const API_AH =`https://us.api.blizzard.com/data/wow/connected-realm/86/auctions?namespace=dynamic-us&locale=en_US&access_token=${ACCESS_TOKEN}`;
@@ -103,16 +112,18 @@ fetch(`${API_AH}`)
 
   })
 
-
-
- 
-
+  function buscar2(item) {
+    let ItemPrices= [item.materiales];
+    return ItemPrices;
+  }
 
 const API_URL =
   `https://us.api.blizzard.com/data/wow/profession/171/skill-tier/2750?namespace=static-us&locale=es_ES&access_token=${ACCESS_TOKEN}`;
 
 const HTMLResponse = document.querySelector("#app");
 const ul = document.createElement("ul");
+
+
 let array =[];
 let arr = [2,3,4,5,400];
 //array.push(10000888)
@@ -120,43 +131,141 @@ fetch(`${API_URL}`)
   .then((response) => response.json())
   .then((covenant) => {
     covenant.categories.forEach((we) => {
+
+      let ul2 = document.createElement("ul");
       let elem = document.createElement("li");
+      
 
       elem.appendChild(document.createTextNode(`${we.name}`));
 
       ul.appendChild(elem);
-        var aux = 0;
-      we.recipes.forEach((r) => {
+      elem.appendChild(ul2);
+     
+        we.recipes.forEach((r) => {
+        
+        
+        let ul3 = document.createElement("ul");
         let elem2 = document.createElement("li");
+        
+       
 
         const API_URL_ITEMS = `https://us.api.blizzard.com/data/wow/recipe/${r.id}?namespace=static-us&locale=es_ES&access_token=${ACCESS_TOKEN}`;
 
         fetch(`${API_URL_ITEMS}`)
           .then((response) => response.json())
-          .then((item) =>   item.crafted_item.id)
-          .then((item) =>   elem2.appendChild(document.createTextNode(`---${r.name} = ${item}`)))
-          .then((item) =>   console.log(""))
+          .then((item) => {
+            let unico = item.reagents;
+            let another = unico.map((x)=>x.reagent);
+            let material_id = another.map((x)=>x.id);
+            let cantidad = unico.map((x)=>x.quantity);
+            let craft=[]
+            unico.forEach((i)=>{
+              craft.push({cant:i.quantity, id_item:i.reagent.id, name:i.reagent.name})
+            })
+             let ItemPrices= {item:item.crafted_item, materiales:craft};
+             return ItemPrices;            
+            })           
+            .then((item) =>   
+              {              
+                  buscaPokemon()
+                  .then((arreglo) => arreglo.map(buscar))
+                  .then((arreglo) => arreglo.filter((x)=>x.codigo==item.item.id ))
+                  .then((arreglo) => {
 
-          // console.log(aux)
-            //let id2 = item.;
-            //elem2.appendChild(document.createTextNode(`---${r.name} = ${id2}`));
-            
-            //arr.push(1005)
-            
+                    if (arreglo.length === 0  )
+                    return [10];
+                    else
+                    return arreglo;
+                  })                
+                  .then((arreglo) => arreglo.map((x)=>x.precio))                
+                  
+                  .then((arreglo) => {
+
+                    if (!isNaN(Math.min(...arreglo)/10000))
+                    return Math.min(...arreglo)/10000;
+                    else
+                    return 'NO CUMPLE'
+                  
+                  })         
+                  
+                  .then((arreglo)=>  {
+                    
+                    elem2.appendChild(document.createTextNode(`${r.name} = ${arreglo}`))
+                    ul2.appendChild(elem2);
+                    return arreglo;
+                  
+                  }).then((arreglo)=>  {
+                    
+                    elem2.appendChild(ul3);
+                  
+                  })                   
+                  .catch(e => console.log(e));
+                  
+    
+                  return item;
+
+              })
           
+            .then((item)=> {
+              
+              item.materiales.forEach((i)=>{ 
+
+                let elem3 = document.createElement("li");
+                buscaPokemon()
+                .then((arreglo) => arreglo.map(buscar))
+                .then((arreglo) => arreglo.filter((x)=>x.codigo==i.id_item ))
+                .then((arreglo) => {
+
+                  if (arreglo.length === 0  )
+                  return [10];
+                  else
+                  return arreglo;
+                })                
+                .then((arreglo) => arreglo.map((x)=>x.precio))                
+                
+                .then((arreglo) => {
+
+                  if (!isNaN(Math.min(...arreglo)/10000))
+                  return Math.min(...arreglo)/10000;
+                  else
+                  return 'NO CUMPLE'
+                
+                })
+                .then((arreglo) => {
+                  
+                  elem3.appendChild(document.createTextNode(`${i.name} X ${i.cant} = ${arreglo}// total ${arreglo * i.cant}`));
             
-          //arr.push(1005)
-          //array.push(r)
-        ul.appendChild(elem2);
+                  ul3.appendChild(elem3);
+                })    
+
+                           
+
+
+                
+
+
+                return i;
+
+                
+
+              })
+
+
+            })  
+
+          
+  
+         
+          
         
       });
     });
-    //console.log(array);
-    //console.log(arr);
     
-    
-    let result = arr.filter((d) => d >  40 );
-    //console.log(result);
+   
     
     HTMLResponse.appendChild(ul);
+    //HTMLResponse.appendChild(ul2);
+
   });
+
+  
